@@ -1,0 +1,80 @@
+# Prediction Assignment Writeup
+
+-------------------------------
+
+## Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+## Data
+
+The training data for this project are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+## Load Library
+```{r results='hide'}
+library(caret)
+library(randomForest)
+```
+
+## Load Data
+Load the training dataset and the testing dataset
+```{r}
+dt_training <- read.csv("pml-training.csv")
+dt_testing <- read.csv("pml-testing.csv")
+```
+
+## Cleaning the Data
+Remove the first 7 features (because they are related to the time-series or are not numeric). Also, remove all columns containing NA and remove features that are not in the testing dataset.
+```{r}
+features <- names(dt_testing[,colSums(is.na(dt_testing)) == 0])[8:59]
+dt_training <- dt_training[,c(features,"classe")]
+dt_testing <- dt_testing[,c(features,"problem_id")]
+print(dim(dt_training))
+print(dim(dt_testing))
+```
+
+
+## Partitioning the Dataset
+Split our data into a training data set (60% total cases) and a testing data set (40% total cases)
+```{r}
+set.seed(1219)
+inTrain <- createDataPartition(dt_training$classe, p=0.6, list=FALSE)
+training <- dt_training[inTrain,]
+testing <- dt_training[-inTrain,]
+print(dim(training))
+print(dim(testing))
+```
+
+## Building the Random Forest Model
+Build random forest classifier and use 10-folds cross-validation
+```{r}
+set.seed(1219)
+control <- trainControl(method = "cv", number = 2)
+model <- train(classe ~ ., data = training, method = "rf", trControl = control)
+```
+
+## Examine Model Performance
+```{r}
+print(model)
+```
+
+## Predicting with the Decision Tree Model
+```{r}
+prediction=predict(model, newdata=testing)
+confusionMatrix(prediction, testing$classe)
+```
+
+## Predicting with the Testing Data (from pml-testing.csv)
+```{r}
+predictionRF <- predict(model, dt_testing)
+predictionRF;
+```
